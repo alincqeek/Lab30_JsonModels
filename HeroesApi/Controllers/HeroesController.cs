@@ -17,7 +17,6 @@ public class HeroesController : ControllerBase
     {
         return Ok(HeroesStore.Heroes);
     }
-
     [HttpGet("{id}")]
     public ActionResult<Hero> GetById(int id)
     {
@@ -28,34 +27,67 @@ public class HeroesController : ControllerBase
         }
         return Ok(hero);
     }
-
-
-
-[HttpGet("demo")]
-public ActionResult GetDemo()
-{
-    var hero = HeroesStore.Heroes.First();
-
-    var defaultOptions = new JsonSerializerOptions
+    [HttpGet("demo")]
+    public ActionResult GetDemo()
     {
-        WriteIndented = true
-    };
+        var hero = HeroesStore.Heroes.First();
 
-    var ourOptions = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
+        var defaultOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
 
-    return Ok(new
+        var ourOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+        return Ok(new
+        {
+            withDefaultSettings = JsonSerializer.Deserialize<object>(
+                JsonSerializer.Serialize(hero, defaultOptions),
+                defaultOptions),
+            withOurSettings = JsonSerializer.Deserialize<object>(
+                JsonSerializer.Serialize(hero, ourOptions),
+                ourOptions),
+            note = "Сравните имена полей и значение universe в двух вариантах"
+        });
+    }
+
+    [HttpGet("serialize")]
+    public ActionResult GetSerialize()
     {
-        withDefaultSettings = JsonSerializer.Deserialize<object>(
-            JsonSerializer.Serialize(hero, defaultOptions),
-            defaultOptions),
-        withOurSettings = JsonSerializer.Deserialize<object>(
-            JsonSerializer.Serialize(hero, ourOptions),
-            ourOptions),
-        note = "Сравните имена полей и значение universe в двух вариантах"
-    });
-}};
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+
+        var hero = new Hero
+        {
+            Id = 99,
+            Name = "Тестовый герой",
+            RealName = "Студент",
+            Universe = Universe.Marvel,
+            PowerLevel = 50,
+            Powers = new List<string> { "программирование", "отладка" },
+            Weapon = new Weapon { Name = "Клавиатура", IsRanged = false },
+            InternalNotes = "Это поле не попадает в Json"
+        };
+        string serialized = JsonSerializer.Serialize(hero, options);
+        var deserialized = JsonSerializer.Deserialize<Hero>(serialized, options);
+        return Ok(new
+        {
+            serializedJson = serialized,
+            deserializedObjict = deserialized,
+            internalNotesAfterDeserializer = deserialized?.InternalNotes ?? "null - поле было проигнорированно"
+        });
+    }
+
+
+
+};
